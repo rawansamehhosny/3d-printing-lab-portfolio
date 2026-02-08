@@ -714,9 +714,11 @@ app.get('/model/:id', async (c) => {
         </div>
       </div>
 
-      <div id="lightbox">
+      <div id="lightbox" onclick="closeLightbox()">
         <button class="nav-btn prev-btn" onclick="event.stopPropagation(); changeImage(-1)">‹</button>
-        <img src="" id="lbox-img" onclick="closeLightbox()">
+        
+        <img src="" id="lbox-img" onclick="event.stopPropagation()">
+        
         <button class="nav-btn next-btn" onclick="event.stopPropagation(); changeImage(1)">›</button>
       </div>
 
@@ -744,35 +746,23 @@ app.get('/model/:id', async (c) => {
           updateLightbox();
         }
 
+        // دالة القفل بقت بتشتغل بس لو دوستي على الـ Background
         function closeLightbox() {
           const lb = document.getElementById('lightbox');
           lb.classList.remove('active');
           setTimeout(() => lb.style.display = 'none', 500);
         }
 
-        // --- إضافة خاصية السحب (Swipe) للموبايل ---
+        // --- Swipe Logic ---
         const lbContainer = document.getElementById('lightbox');
-
-        lbContainer.addEventListener('touchstart', e => {
-          touchStartX = e.changedTouches[0].screenX;
-        }, false);
-
-        lbContainer.addEventListener('touchend', e => {
-          touchEndX = e.changedTouches[0].screenX;
-          handleSwipe();
-        }, false);
+        lbContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, false);
+        lbContainer.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, false);
 
         function handleSwipe() {
-          const swipeThreshold = 50; // المسافة الأدنى للسحب
-          if (touchEndX < touchStartX - swipeThreshold) {
-            changeImage(1); // سحب لليسار -> التالي
-          }
-          if (touchEndX > touchStartX + swipeThreshold) {
-            changeImage(-1); // سحب لليمين -> السابق
-          }
+          if (touchEndX < touchStartX - 50) changeImage(1);
+          if (touchEndX > touchStartX + 50) changeImage(-1);
         }
 
-        // دعم الكيبورد
         document.addEventListener('keydown', (e) => {
           if (lbContainer.classList.contains('active')) {
             if (e.key === 'ArrowRight') changeImage(1);
