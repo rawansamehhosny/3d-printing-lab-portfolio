@@ -542,6 +542,8 @@ app.get('/model/:id', async (c) => {
 
   if (!model) return c.text("Model not found! ❌", 404);
 
+  const imagesJson = JSON.stringify(model.images);
+
   return c.html(`
     <!DOCTYPE html>
     <html lang="en">
@@ -563,7 +565,7 @@ app.get('/model/:id', async (c) => {
           background: radial-gradient(circle at top right, #1a1a1d, #050505);
           color: white; 
           margin: 0; 
-          overflow-x: hidden; /* مسموح بالسكرول الرأسي */
+          overflow-x: hidden;
           scroll-behavior: smooth;
         }
         
@@ -620,7 +622,6 @@ app.get('/model/:id', async (c) => {
           font-weight: 300;
         }
 
-        /* --- Animations & Effects --- */
         .image-gallery { 
           display: grid; 
           grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
@@ -639,21 +640,35 @@ app.get('/model/:id', async (c) => {
           border-color: var(--accent);
         }
 
+        /* --- Lightbox --- */
         #lightbox { 
           position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
           background: rgba(0,0,0,0.98); display: none; justify-content: center; 
-          align-items: center; z-index: 1000; cursor: pointer;
+          align-items: center; z-index: 1000;
           backdrop-filter: blur(20px);
           opacity: 0; transition: opacity 0.5s ease;
-        }
-        #lightbox img { 
-          max-width: 85%; max-height: 85%; 
-          border: 1px solid var(--border);
-          transform: scale(0.8); /* يبدأ صغير */
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          touch-action: none; /* لمنع السكرول أثناء السحب */
         }
         #lightbox.active { opacity: 1; }
-        #lightbox.active img { transform: scale(1); } /* "بينط" قدامك لما يتفتح */
+        
+        #lbox-img { 
+          max-width: 85%; max-height: 85%; 
+          border: 1px solid var(--border);
+          transform: scale(0.8);
+          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+        }
+        #lightbox.active img { transform: scale(1); }
+
+        .nav-btn {
+          position: absolute; top: 50%; transform: translateY(-50%);
+          background: rgba(255,255,255,0.05); border: none; color: white;
+          font-size: 2.5rem; padding: 25px 15px; cursor: pointer; transition: 0.3s;
+          z-index: 1010; font-family: serif;
+        }
+        .nav-btn:hover { color: var(--accent); background: rgba(255,255,255,0.1); }
+        .prev-btn { left: 20px; }
+        .next-btn { right: 20px; }
 
         .btn-delete {
           position: absolute; top: 20px; right: 20px;
@@ -664,8 +679,10 @@ app.get('/model/:id', async (c) => {
         }
         .btn-delete:hover { background: #ff4757; color: white; transform: scale(1.1); }
 
-        @media (max-width: 1100px) {
-          .container { grid-template-columns: 1fr; gap: 40px; }
+        @media (max-width: 768px) {
+          .container { grid-template-columns: 1fr; gap: 40px; padding: 0 20px; }
+          h1 { font-size: 2.5rem; }
+          .nav-btn { display: none; } /* إخفاء الأسهم في الموبايل والاعتماد على السحب */
         }
       </style>
     </head>
@@ -691,23 +708,40 @@ app.get('/model/:id', async (c) => {
           <div class="gallery-section">
             <h3 style="color: var(--accent); font-family: 'Playfair Display'; font-style: italic; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px;">Visual Documentation</h3>
             <div class="image-gallery">
-              ${model.images.map(img => `<img src="${img}" onclick="openLightbox(this.src)">`).join('')}
+              ${model.images.map((img, index) => `<img src="${img}" onclick="openLightbox(${index})">`).join('')}
             </div>
           </div>
         </div>
       </div>
 
-      <div id="lightbox" onclick="closeLightbox()">
-        <img src="" id="lbox-img">
+      <div id="lightbox">
+        <button class="nav-btn prev-btn" onclick="event.stopPropagation(); changeImage(-1)">‹</button>
+        <img src="" id="lbox-img" onclick="closeLightbox()">
+        <button class="nav-btn next-btn" onclick="event.stopPropagation(); changeImage(1)">›</button>
       </div>
 
       <script>
-        function openLightbox(src) {
+        const images = ${imagesJson};
+        let currentIndex = 0;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function openLightbox(index) {
+          currentIndex = index;
+          updateLightbox();
           const lb = document.getElementById('lightbox');
-          const img = document.getElementById('lbox-img');
-          img.src = src;
           lb.style.display = 'flex';
           setTimeout(() => lb.classList.add('active'), 10);
+        }
+
+        function updateLightbox() {
+          const img = document.getElementById('lbox-img');
+          img.src = images[currentIndex];
+        }
+
+        function changeImage(step) {
+          currentIndex = (currentIndex + step + images.length) % images.length;
+          updateLightbox();
         }
 
         function closeLightbox() {
@@ -715,6 +749,37 @@ app.get('/model/:id', async (c) => {
           lb.classList.remove('active');
           setTimeout(() => lb.style.display = 'none', 500);
         }
+
+        // --- إضافة خاصية السحب (Swipe) للموبايل ---
+        const lbContainer = document.getElementById('lightbox');
+
+        lbContainer.addEventListener('touchstart', e => {
+          touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        lbContainer.addEventListener('touchend', e => {
+          touchEndX = e.changedTouches[0].screenX;
+          handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+          const swipeThreshold = 50; // المسافة الأدنى للسحب
+          if (touchEndX < touchStartX - swipeThreshold) {
+            changeImage(1); // سحب لليسار -> التالي
+          }
+          if (touchEndX > touchStartX + swipeThreshold) {
+            changeImage(-1); // سحب لليمين -> السابق
+          }
+        }
+
+        // دعم الكيبورد
+        document.addEventListener('keydown', (e) => {
+          if (lbContainer.classList.contains('active')) {
+            if (e.key === 'ArrowRight') changeImage(1);
+            if (e.key === 'ArrowLeft') changeImage(-1);
+            if (e.key === 'Escape') closeLightbox();
+          }
+        });
       </script>
     </body>
     </html>
