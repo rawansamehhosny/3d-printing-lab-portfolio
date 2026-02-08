@@ -404,7 +404,6 @@ app.get('/gallery', async (c) => {
           color: white; 
           margin: 0; 
           overflow-x: hidden;
-          /* تحسين السكرول */
           scroll-behavior: smooth;
           -webkit-font-smoothing: antialiased;
         }
@@ -427,7 +426,8 @@ app.get('/gallery', async (c) => {
 
         .grid { 
           display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+          /* تم تعديل الـ minmax لضمان ثبات العرض ومنع التمدد */
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
           gap: 40px; 
         }
 
@@ -438,8 +438,11 @@ app.get('/gallery', async (c) => {
           cursor: pointer;
           transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
-          /* سطر سحري يمنع الـ Lag في الـ Hover */
           will-change: transform;
+          /* التعديل: إجبار الكارت على الالتزام بالعرض المخصص له في الـ Grid */
+          display: flex;
+          flex-direction: column;
+          overflow: hidden; 
         }
 
         .card:hover {
@@ -454,12 +457,14 @@ app.get('/gallery', async (c) => {
           width: 100%;
           height: 320px;
           overflow: hidden;
-          /* إجبار المتصفح على استخدام كارت الشاشة */
           transform: translateZ(0);
         }
 
         .card-img { 
-          width: 100%; height: 100%; object-fit: cover; 
+          width: 100%; 
+          height: 100%; 
+          /* دي اللي بتخلي الصورة تتقص باحترافية بدل ما تتمط */
+          object-fit: cover; 
           transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
           filter: grayscale(0.4);
           will-change: transform, filter;
@@ -467,7 +472,7 @@ app.get('/gallery', async (c) => {
 
         .card:hover .card-img { transform: scale(1.1); filter: grayscale(0); }
 
-        .card-info { padding: 30px 25px; }
+        .card-info { padding: 30px 25px; flex-grow: 1; }
         .card-category { font-size: 0.65rem; color: var(--accent); letter-spacing: 3px; margin-bottom: 12px; opacity: 0.8; }
         
         .card-info h3 { 
