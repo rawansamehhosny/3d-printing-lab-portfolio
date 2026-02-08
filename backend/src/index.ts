@@ -8,15 +8,21 @@ app.use("*", cors());
 import { Model } from './models/model'; 
 import mongoose from 'mongoose';
 app.use('/uploads/*', serveStatic({ root: './public' }));
+import { createClient } from '@supabase/supabase-js'
 
-import { v2 as cloudinary } from 'cloudinary';
+// إعداد عميل Supabase
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_KEY!
+);
+// import { v2 as cloudinary } from 'cloudinary';
 
 // إعدادات الربط مع Cloudinary
-cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_NAME, 
-  api_key: process.env.CLOUDINARY_KEY, 
-  api_secret: process.env.CLOUDINARY_SECRET 
-});
+// cloudinary.config({ 
+//   cloud_name: process.env.CLOUDINARY_NAME, 
+//   api_key: process.env.CLOUDINARY_KEY, 
+//   api_secret: process.env.CLOUDINARY_SECRET 
+// });
 
 const mongoURI = process.env.MONGO_URI;
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
@@ -28,10 +34,10 @@ if (!mongoURI) {
     .then(() => console.log("🚀 Connected to MongoDB successfully!"))
     .catch((err) => {
       console.error(err);
-      // لو الـ Cloud فشل بسبب الـ DNS في مصر، هيحاول يربط بالمحلي اللي نزلتيه
-      mongoose.connect("mongodb://127.0.0.1:27017/3d_database")
-        .then(() => console.log("🏠 Local MongoDB Connected!"))
-        .catch(localErr => console.error("❌ All connections failed:", localErr.message));
+    //   // لو الـ Cloud فشل بسبب الـ DNS في مصر، هيحاول يربط بالمحلي اللي نزلتيه
+    //   mongoose.connect("mongodb://127.0.0.1:27017/3d_database")
+    //     .then(() => console.log("🏠 Local MongoDB Connected!"))
+    //     .catch(localErr => console.error("❌ All connections failed:", localErr.message));
     
     });
 }
@@ -47,37 +53,41 @@ app.post('/upload', async (c) => {
     let model3dUrl = "";
     const imageUrls: string[] = [];
 
+    // 2. اللوب لرفع الملفات لسوبابيس
     for (const fileValue of files) {
       const file = fileValue as File;
       if (file.size > 0) {
+       const safeFileName = file.name.replace(/[^\x00-\x7F]/g, "file"); 
         
-        // --- الطريقة الجوكر للرفع (Direct Upload) ---
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('upload_preset', 'qd5sdywm'); // الـ Preset بتاعك
-        uploadFormData.append('folder', 'ahmed_portfolio');
+        // 2. بنعمل المسار النهائي (الوقت + الاسم النظيف)
+        const filePath = `${Date.now()}_${safeFileName}`;
+        
+        // 3. بنرفع لـ Supabase باستخدام الـ filePath الجديد
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('3d-printing-lab') 
+          .upload(filePath, file);
 
-        // بنبعت الطلب مباشرة لسيرفر Cloudinary من غير وسيط الـ SDK
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_NAME}/auto/upload`, {
-          method: 'POST',
-          body: uploadFormData
-        });
-
-        const uploadResult: any = await response.json();
-
-        if (!response.ok) {
-          console.error("Cloudinary Error Detail:", uploadResult);
-          throw new Error(uploadResult.error?.message || "Upload Failed");
+        if (uploadError) {
+          console.error("Supabase Upload Error:", uploadError.message);
+          throw new Error(`Upload failed: ${uploadError.message}`);
         }
 
-        if (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf')) {
-          model3dUrl = uploadResult.secure_url;
+        // 4. بنجيب اللينك برضه باستخدام الـ filePath الجديد
+        const { data: { publicUrl } } = supabase.storage
+          .from('3d-printing-lab')
+          .getPublicUrl(filePath);
+
+        // ... باقي الكود اللي بيصنف الملف (image أو model) ...
+        const lowerName = safeFileName.toLowerCase(); // استخدمي الاسم النظيف هنا برضه
+        if (lowerName.endsWith('.glb') || lowerName.endsWith('.gltf')) {
+          model3dUrl = publicUrl;
         } else {
-          imageUrls.push(uploadResult.secure_url);
+          imageUrls.push(publicUrl);
         }
       }
     }
 
+    // 4. الحفظ في MongoDB Atlas (اللي إحنا لسه مصلحينه!)
     const newModel = await Model.create({
       title: title || "New Asset",
       description: description || "",
@@ -88,7 +98,7 @@ app.post('/upload', async (c) => {
     return c.json({ success: true, url: model3dUrl, data: newModel });
 
   } catch (error: any) {
-    console.error("❌ Final Attempt Error:", error.message);
+    console.error("❌ Supabase Route Error:", error.message);
     return c.json({ error: error.message }, 500);
   }
 });
