@@ -396,6 +396,7 @@ app.get('/gallery', async (c) => {
           --bg: #050505; 
           --accent: #c5a358; 
           --text-muted: #666666;
+          --border: rgba(255, 255, 255, 0.05);
         }
 
         body { 
@@ -404,7 +405,7 @@ app.get('/gallery', async (c) => {
           color: white; 
           margin: 0; 
           overflow-x: hidden;
-          scroll-behavior: smooth;
+          scroll-behavior: smooth; /* ده اللي بيخلي النزول ناعم لما نضغط على اللينك */
           -webkit-font-smoothing: antialiased;
         }
 
@@ -416,17 +417,40 @@ app.get('/gallery', async (c) => {
           background: rgba(5, 5, 5, 0.8);
           backdrop-filter: blur(20px);
           position: sticky; top: 0; z-index: 1000;
+          border-bottom: 1px solid var(--border);
         }
         .logo { font-family: 'Playfair Display', serif; font-size: 1.8rem; letter-spacing: 2px; color: var(--accent); }
-        nav a { color: white; text-decoration: none; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; margin-left: 30px; opacity: 0.6; transition: 0.3s; }
-        nav a:hover { opacity: 1; color: var(--accent); }
+        
+        .nav-links { display: flex; align-items: center; gap: 30px; }
+        .nav-links a { 
+          color: white; 
+          text-decoration: none; 
+          font-size: 0.7rem; 
+          letter-spacing: 2px; 
+          text-transform: uppercase; 
+          opacity: 0.6; 
+          transition: 0.3s; 
+        }
+        .nav-links a:hover { opacity: 1; color: var(--accent); }
 
-        .container { max-width: 1400px; margin: 60px auto; padding: 0 50px; }
+        /* ستايل خاص لزرار الطلب عشان يبرز */
+        .order-btn {
+          border: 1px solid var(--accent);
+          padding: 8px 15px;
+          border-radius: 2px;
+          color: var(--accent) !important;
+          opacity: 1 !important;
+        }
+        .order-btn:hover {
+          background: var(--accent);
+          color: black !important;
+        }
+
+        .container { max-width: 1400px; margin: 60px auto; padding: 0 50px; min-height: 80vh; }
         h1 { font-family: 'Playfair Display', serif; font-size: 4rem; margin-bottom: 60px; font-weight: 700; line-height: 1; color: #fff; }
 
         .grid { 
           display: grid; 
-          /* تم تعديل الـ minmax لضمان ثبات العرض ومنع التمدد */
           grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
           gap: 40px; 
         }
@@ -434,12 +458,10 @@ app.get('/gallery', async (c) => {
         .card { 
           background: rgba(255, 255, 255, 0.02); 
           backdrop-filter: blur(15px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border);
           cursor: pointer;
           transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
-          will-change: transform;
-          /* التعديل: إجبار الكارت على الالتزام بالعرض المخصص له في الـ Grid */
           display: flex;
           flex-direction: column;
           overflow: hidden; 
@@ -449,52 +471,15 @@ app.get('/gallery', async (c) => {
           transform: translateY(-12px);
           border-color: rgba(197, 163, 88, 0.4);
           box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-          background: rgba(255, 255, 255, 0.04);
         }
 
-        .card-image-wrapper {
-          position: relative;
-          width: 100%;
-          height: 320px;
-          overflow: hidden;
-          transform: translateZ(0);
-        }
-
-        .card-img { 
-          width: 100%; 
-          height: 100%; 
-          /* دي اللي بتخلي الصورة تتقص باحترافية بدل ما تتمط */
-          object-fit: cover; 
-          transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-          filter: grayscale(0.4);
-          will-change: transform, filter;
-        }
-
+        .card-image-wrapper { position: relative; width: 100%; height: 320px; overflow: hidden; }
+        .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); filter: grayscale(0.4); }
         .card:hover .card-img { transform: scale(1.1); filter: grayscale(0); }
-
         .card-info { padding: 30px 25px; flex-grow: 1; }
         .card-category { font-size: 0.65rem; color: var(--accent); letter-spacing: 3px; margin-bottom: 12px; opacity: 0.8; }
-        
-        .card-info h3 { 
-          font-size: 1.5rem; margin: 0; 
-          font-family: 'Playfair Display', serif; 
-          font-weight: 400;
-          position: relative;
-          display: inline-block;
-        }
-
-        .card-info h3::after {
-          content: ''; position: absolute; bottom: -5px; left: 0; 
-          width: 0; height: 1px; background: var(--accent); 
-          transition: width 0.4s ease;
-        }
-        .card:hover h3::after { width: 100%; }
-
-        .card-footer { 
-          margin-top: 25px; display: flex; align-items: center; 
-          gap: 10px; opacity: 0.3; transition: 0.3s;
-        }
-        .view-link { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+        .card-info h3 { font-size: 1.5rem; margin: 0; font-family: 'Playfair Display', serif; font-weight: 400; }
+        .card-footer { margin-top: 25px; display: flex; align-items: center; gap: 10px; opacity: 0.3; transition: 0.3s; }
         .card:hover .card-footer { opacity: 1; color: var(--accent); }
 
         .card-overlay {
@@ -506,19 +491,39 @@ app.get('/gallery', async (c) => {
         .card-overlay span { padding: 10px 20px; border: 1px solid white; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
         .card:hover .card-overlay { opacity: 1; }
 
+        /* --- Footer Contact Style --- */
+        footer {
+          margin-top: 100px;
+          padding: 80px 50px;
+          border-top: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.01);
+          text-align: center;
+        }
+
+        .contact-grid { display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; margin-bottom: 40px; }
+        .contact-item { text-decoration: none; color: white; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .contact-item:hover { color: var(--accent); transform: translateY(-8px); }
+        .contact-icon { font-size: 1.8rem; }
+        .contact-text { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; }
+
+        .copyright { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 2px; margin-top: 60px; text-transform: uppercase; }
+
         @media (max-width: 768px) {
           h1 { font-size: 2.5rem; }
           .grid { grid-template-columns: 1fr; }
           nav { padding: 20px; }
+          .nav-links { gap: 15px; }
+          .contact-grid { gap: 30px; }
         }
       </style>
     </head>
     <body>
       <nav>
         <div class="logo">3D printing Lab</div>
-        <div>
+        <div class="nav-links">
           <a href="/gallery">Works</a>
           <a href="/admin">Laboratory</a>
+          <a href="#contact" class="order-btn">Order a Masterpiece</a>
         </div>
       </nav>
 
@@ -530,11 +535,35 @@ app.get('/gallery', async (c) => {
           ${cardsHtml}
         </div>
       </div>
+
+      <footer id="contact">
+        <p style="color: var(--accent); letter-spacing: 8px; font-size: 0.65rem; margin-bottom: 50px; opacity: 0.6;">START YOUR PROJECT</p>
+        
+        <div class="contact-grid">
+          <a href="https://wa.me/201145460679" target="_blank" class="contact-item">
+            <span class="contact-icon">📱</span>
+            <span class="contact-text">WhatsApp</span>
+          </a>
+
+          <a href="tel:+201145460679" class="contact-item">
+            <span class="contact-icon">📞</span>
+            <span class="contact-text">Call Now</span>
+          </a>
+
+          <a href="https://www.facebook.com/share/18GPHVApn3/" target="_blank" class="contact-item">
+            <span class="contact-icon">🌐</span>
+            <span class="contact-text">Facebook</span>
+          </a>
+        </div>
+
+        <div class="copyright">
+          © 2026 AHMED.3D | Precision & Digital Art Laboratory
+        </div>
+      </footer>
     </body>
     </html>
   `);
 });
-
 app.get('/model/:id', async (c) => {
   const id = c.req.param('id');
   const isAdmin = getCookie(c, 'admin_session') === 'verified_ahmed';
@@ -934,8 +963,51 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD;
 app.get('/delete/:id', async (c) => {
   const auth = getCookie(c, 'admin_session');
   if (auth !== 'verified_ahmed') return c.redirect('/login-secure');
+  
   const id = c.req.param('id');
-  await Model.findByIdAndDelete(id);
+
+  try {
+    // 1. بندور على الموديل الأول عشان نعرف أسماء الملفات بتاعته
+    const model = await Model.findById(id);
+
+    if (model) {
+      const filesToDelete: string[] = [];
+
+      // استخراج اسم ملف الـ 3D
+      if (model.model3d) {
+        const modelFileName = model.model3d.split('/').pop();
+        if (modelFileName) filesToDelete.push(modelFileName);
+      }
+
+      // استخراج أسماء الصور
+      if (model.images && model.images.length > 0) {
+        model.images.forEach((url: string) => {
+          const imgFileName = url.split('/').pop();
+          if (imgFileName) filesToDelete.push(imgFileName);
+        });
+      }
+
+      // 2. أمر المسح من Supabase 
+      if (filesToDelete.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from('3d-printing-lab')
+          .remove(filesToDelete);
+
+        if (storageError) {
+          console.error("❌ Supabase Delete Error:", storageError.message);
+        } else {
+          console.log("✅ Files successfully removed from Supabase");
+        }
+      }
+    }
+
+    // 3. نمسح الداتا من MongoDB 
+    await Model.findByIdAndDelete(id);
+    
+  } catch (error) {
+    console.error("❌ Delete Route Error:", error);
+  }
+
   return c.redirect('/gallery');
 });
 
