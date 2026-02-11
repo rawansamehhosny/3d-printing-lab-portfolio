@@ -362,7 +362,7 @@ app.get('/admin', (c) => {
 });
 
 app.get('/gallery', async (c) => {
-  const models = await Model.find({});
+  const models = await Model.find({}).sort({ createdAt: -1 }).limit(20); // جلب أحدث 20 موديل
 
   const cardsHtml = models.map(m => `
     <div class="card" onclick="location.href='/model/${m._id}'">
