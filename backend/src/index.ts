@@ -405,7 +405,7 @@ app.get('/gallery', async (c) => {
           color: white; 
           margin: 0; 
           overflow-x: hidden;
-          scroll-behavior: smooth; /* ده اللي بيخلي النزول ناعم لما نضغط على اللينك */
+          scroll-behavior: smooth;
           -webkit-font-smoothing: antialiased;
         }
 
@@ -433,7 +433,6 @@ app.get('/gallery', async (c) => {
         }
         .nav-links a:hover { opacity: 1; color: var(--accent); }
 
-        /* ستايل خاص لزرار الطلب عشان يبرز */
         .order-btn {
           border: 1px solid var(--accent);
           padding: 8px 15px;
@@ -491,7 +490,6 @@ app.get('/gallery', async (c) => {
         .card-overlay span { padding: 10px 20px; border: 1px solid white; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
         .card:hover .card-overlay { opacity: 1; }
 
-        /* --- Footer Contact Style --- */
         footer {
           margin-top: 100px;
           padding: 80px 50px;
@@ -508,11 +506,17 @@ app.get('/gallery', async (c) => {
 
         .copyright { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 2px; margin-top: 60px; text-transform: uppercase; }
 
+        /* التعديل هنا للهواتف */
         @media (max-width: 768px) {
-          h1 { font-size: 2.5rem; }
+          nav { padding: 15px 20px; flex-direction: column; gap: 15px; }
+          .logo { font-size: 1.4rem; }
+          .nav-links { gap: 15px; width: 100%; justify-content: center; flex-wrap: wrap; }
+          .nav-links a { font-size: 0.6rem; letter-spacing: 1px; }
+          .order-btn { padding: 6px 10px; }
+          
+          h1 { font-size: 2.5rem; text-align: center; margin-bottom: 40px; }
+          .container { padding: 0 20px; margin-top: 30px; }
           .grid { grid-template-columns: 1fr; }
-          nav { padding: 20px; }
-          .nav-links { gap: 15px; }
           .contact-grid { gap: 30px; }
         }
       </style>
@@ -528,8 +532,8 @@ app.get('/gallery', async (c) => {
       </nav>
 
       <div class="container">
-        <p style="color: var(--accent); letter-spacing: 5px; font-size: 0.7rem; margin-bottom: 20px; opacity: 0.8;">CURATED ARTWORKS</p>
-        <h1>Selected <br> Artifacts</h1>
+        <p style="color: var(--accent); letter-spacing: 5px; font-size: 0.7rem; margin-bottom: 20px; opacity: 0.8; text-align: center;">CURATED ARTWORKS</p>
+        <h1 style="text-align: center;">Selected <br> Artifacts</h1>
         
         <div class="grid">
           ${cardsHtml}
@@ -564,6 +568,7 @@ app.get('/gallery', async (c) => {
     </html>
   `);
 });
+
 app.get('/model/:id', async (c) => {
   const id = c.req.param('id');
   const isAdmin = getCookie(c, 'admin_session') === 'verified_ahmed';
@@ -571,8 +576,21 @@ app.get('/model/:id', async (c) => {
 
   if (!model) return c.text("Model not found! ❌", 404);
 
-  const imagesJson = JSON.stringify(model.images);
+  // تجهيز بيانات الواتساب واللينك
+  const currentUrl = c.req.url; 
+  const whatsappMessage = encodeURIComponent(
+    `Hello Ahmed! I'm interested in the masterpiece: "${model.title}".\n\nLink: ${currentUrl}`
+  );
+  const whatsappUrl = `https://wa.me/201145460679?text=${whatsappMessage}`;
 
+  // هنا بنحدد هنعرض الموديل ولا الصورة الأساسية
+  const hasModel3d = model.model3d && model.model3d.trim() !== "";
+  const mainContent = hasModel3d 
+    ? `<model-viewer src="${model.model3d}" camera-controls auto-rotate shadow-intensity="1" environment-image="neutral" exposure="1"></model-viewer>`
+    : `<img src="${model.images[0]}" class="main-fallback-img" alt="${model.title}">`;
+
+  const imagesJson = JSON.stringify(model.images);
+    
   return c.html(`
     <!DOCTYPE html>
     <html lang="en">
@@ -583,26 +601,26 @@ app.get('/model/:id', async (c) => {
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
       <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
       <style>
-        :root { 
-          --bg: #050505; 
-          --accent: #c5a358; 
+        :root {
+          --bg: #050505;
+          --accent: #c5a358;
           --border: rgba(255, 255, 255, 0.08);
         }
 
-        body { 
-          font-family: 'Inter', sans-serif; 
+        body {
+          font-family: 'Inter', sans-serif;
           background: radial-gradient(circle at top right, #1a1a1d, #050505);
-          color: white; 
-          margin: 0; 
+          color: white;
+          margin: 0;
           overflow-x: hidden;
           scroll-behavior: smooth;
         }
         
-        nav { 
-          padding: 30px 60px; 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
+        nav {
+          padding: 30px 60px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           background: rgba(5, 5, 5, 0.8);
           backdrop-filter: blur(20px);
           position: sticky; top: 0; z-index: 100;
@@ -612,76 +630,92 @@ app.get('/model/:id', async (c) => {
         nav a { color: white; text-decoration: none; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; transition: 0.3s; }
         nav a:hover { opacity: 1; color: var(--accent); }
 
-        .container { 
-          max-width: 1400px; 
-          margin: 60px auto; 
-          padding: 0 50px; 
-          display: grid; 
-          grid-template-columns: 1.2fr 0.8fr; 
-          gap: 80px; 
+        .container {
+          max-width: 1400px;
+          margin: 60px auto;
+          padding: 0 50px;
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 80px;
         }
 
         .viewer-side { position: relative; }
-        model-viewer {
-          width: 100%; 
-          height: 600px; 
+        
+        /* ستايل موحد للمربع سواء كان صورة أو موديل */
+        model-viewer, .main-fallback-img {
+          width: 100%;
+          height: 600px;
           background: #0a0a0b;
           border: 1px solid var(--border);
           box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-          --poster-color: transparent;
+        }
+
+        .main-fallback-img {
+          object-fit: contain;
         }
 
         .details-side { display: flex; flex-direction: column; gap: 35px; }
         .asset-label { color: var(--accent); font-size: 0.7rem; letter-spacing: 5px; text-transform: uppercase; }
-        
-        h1 { 
-          font-family: 'Playfair Display', serif; 
-          font-size: 3.8rem; 
-          margin: 0; 
-          line-height: 1.05; 
-          font-weight: 400; 
-          letter-spacing: -1px;
+        h1 { font-family: 'Playfair Display', serif; font-size: 3.8rem; margin: 0; line-height: 1.05; font-weight: 400; letter-spacing: -1px; }
+        .description { font-size: 1.05rem; line-height: 1.9; color: #aaa; max-width: 95%; font-weight: 300; }
+
+        .image-gallery {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 15px;
         }
 
-        .description { 
-          font-size: 1.05rem; 
-          line-height: 1.9; 
-          color: #aaa; 
-          max-width: 95%;
-          font-weight: 300;
+        .order-whatsapp-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          background: var(--accent);
+          color: black;
+          text-decoration: none;
+          padding: 18px 35px;
+          font-size: 0.85rem;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          font-weight: 600;
+          border-radius: 2px;
+          margin-top: 10px;
+          transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .image-gallery { 
-          display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-          gap: 15px; 
+        .order-whatsapp-btn:hover {
+          background: white;
+          transform: translateY(-5px);
+          box-shadow: 0 15px 30px rgba(197, 163, 88, 0.3);
         }
-        .image-gallery img { 
-          width: 100%; height: 110px; object-fit: cover; 
+
+        .image-gallery img {
+          width: 100%; height: 110px; object-fit: cover;
           border: 1px solid var(--border);
-          cursor: pointer; 
+          cursor: pointer;
           transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           filter: grayscale(0.8) brightness(0.7);
         }
-        .image-gallery img:hover { 
-          filter: grayscale(0) brightness(1); 
-          transform: translateY(-10px) scale(1.05); 
+
+        .image-gallery img:hover {
+          filter: grayscale(0) brightness(1);
+          transform: translateY(-10px) scale(1.05);
           border-color: var(--accent);
         }
 
         /* --- Lightbox --- */
-        #lightbox { 
-          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-          background: rgba(0,0,0,0.98); display: none; justify-content: center; 
+        #lightbox {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.98); display: none; justify-content: center;
           align-items: center; z-index: 1000;
           backdrop-filter: blur(20px);
           opacity: 0; transition: opacity 0.5s ease;
-          touch-action: none; /* لمنع السكرول أثناء السحب */
+          touch-action: none;
         }
         #lightbox.active { opacity: 1; }
         
-        #lbox-img { 
-          max-width: 85%; max-height: 85%; 
+        #lbox-img {
+          max-width: 85%; max-height: 85%;
           border: 1px solid var(--border);
           transform: scale(0.8);
           transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -711,7 +745,8 @@ app.get('/model/:id', async (c) => {
         @media (max-width: 768px) {
           .container { grid-template-columns: 1fr; gap: 40px; padding: 0 20px; }
           h1 { font-size: 2.5rem; }
-          .nav-btn { display: none; } /* إخفاء الأسهم في الموبايل والاعتماد على السحب */
+          .nav-btn { display: none; }
+          model-viewer, .main-fallback-img { height: 400px; }
         }
       </style>
     </head>
@@ -724,7 +759,7 @@ app.get('/model/:id', async (c) => {
       <div class="container">
         <div class="viewer-side">
           ${isAdmin ? `<a href="/delete/${model._id}" class="btn-delete" title="Delete" onclick="return confirm('Archive?')">🗑️</a>` : ''}
-          <model-viewer src="${model.model3d}" camera-controls auto-rotate shadow-intensity="1" environment-image="neutral" exposure="1"></model-viewer>
+          ${mainContent}
         </div>
 
         <div class="details-side">
@@ -733,7 +768,10 @@ app.get('/model/:id', async (c) => {
             <h1>${model.title}</h1>
           </div>
           <p class="description">${model.description || 'A unique digital artifact meticulously crafted.'}</p>
-          
+          <a href="${whatsappUrl}" target="_blank" class="order-whatsapp-btn">
+              Order This Piece Now!
+          </a>
+
           <div class="gallery-section">
             <h3 style="color: var(--accent); font-family: 'Playfair Display'; font-style: italic; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 25px;">Visual Documentation</h3>
             <div class="image-gallery">
@@ -745,9 +783,7 @@ app.get('/model/:id', async (c) => {
 
       <div id="lightbox" onclick="closeLightbox()">
         <button class="nav-btn prev-btn" onclick="event.stopPropagation(); changeImage(-1)">‹</button>
-        
         <img src="" id="lbox-img" onclick="event.stopPropagation()">
-        
         <button class="nav-btn next-btn" onclick="event.stopPropagation(); changeImage(1)">›</button>
       </div>
 
@@ -775,14 +811,12 @@ app.get('/model/:id', async (c) => {
           updateLightbox();
         }
 
-        // دالة القفل بقت بتشتغل بس لو دوستي على الـ Background
         function closeLightbox() {
           const lb = document.getElementById('lightbox');
           lb.classList.remove('active');
           setTimeout(() => lb.style.display = 'none', 500);
         }
 
-        // --- Swipe Logic ---
         const lbContainer = document.getElementById('lightbox');
         lbContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, false);
         lbContainer.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, false);
@@ -804,6 +838,7 @@ app.get('/model/:id', async (c) => {
     </html>
   `);
 });
+
 
 app.get('/login-secure', (c) => {
   return c.html(`
