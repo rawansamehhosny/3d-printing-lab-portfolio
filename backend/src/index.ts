@@ -5,7 +5,7 @@ import { cors } from "hono/cors";
 const app = new Hono();
 import 'dotenv/config'; 
 app.use("*", cors());
-import { Model } from '../src/models/model'; 
+import { Model } from './models/model'; 
 import mongoose from 'mongoose';
 app.use('/uploads/*', serveStatic({ root: './public' }));
 import { createClient } from '@supabase/supabase-js'
