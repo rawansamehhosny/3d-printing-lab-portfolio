@@ -16,9 +16,11 @@
     "@types/bun": "latest"
   },
   "scripts": {
+    "dev": "bun run --hot src/index.ts",
     "start": "bun run src/index.ts",
-    "dev": "bun --watch run src/index.ts"
+    "build": "echo 'Build completed'"
   },
+
   "peerDependencies": {
     "typescript": "^5"
   }
