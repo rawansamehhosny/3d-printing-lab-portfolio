@@ -1,14 +1,15 @@
 {
   "version": 2,
-  "functions": {
-    "backend/src/index.ts": {
-      "runtime": "vercel-node@4.0.0"
+  "builds": [
+    {
+      "src": "src/index.ts",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "backend/src/index.ts"
+      "dest": "src/index.ts"
     }
   ]
 }
