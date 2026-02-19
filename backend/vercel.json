@@ -1,15 +1,15 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "backend/src/index.ts",
-      "use": "@vercel/node"
+  "bunVersion": "1.x",
+  "functions": {
+    "backend/src/index.ts": {
+      "runtime": "bun@1.x"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "backend/src/index.ts"
+      "dest": "/backend/src/index.ts"
     }
   ]
 }

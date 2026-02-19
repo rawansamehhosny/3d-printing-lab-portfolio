@@ -10,6 +10,8 @@ import mongoose from 'mongoose';
 app.use('/uploads/*', serveStatic({ root: './public' }));
 import { createClient } from '@supabase/supabase-js'
 
+
+
 // إعداد عميل Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL!,
