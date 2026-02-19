@@ -1,13 +1,13 @@
 import { Hono } from 'hono'
-import { serveStatic } from 'hono/bun' 
+// import { serveStatic } from 'hono/bun' 
 import { writeFile, mkdir } from 'node:fs/promises'
-import { cors } from "hono/cors";
+// import { cors } from "hono/cors";
 const app = new Hono();
 import 'dotenv/config'; 
-app.use("*", cors());
+// app.use("*", cors());
 import { Model } from './models/model.js'; 
 import mongoose from 'mongoose';
-app.use('/uploads/*', serveStatic({ root: './public' }));
+// app.use('/uploads/*', serveStatic({ root: './public' }));
 import { createClient } from '@supabase/supabase-js'
 
 
@@ -27,7 +27,7 @@ const supabase = createClient(
 
 const mongoURI = process.env.MONGO_URI;
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
-app.get("static/*", serveStatic({ root: "./public" }));
+// app.get("static/*", serveStatic({ root: "./public" }));
 if (!mongoURI) { 
   console.error("❌ Error: MONGO_URI is not defined in .env file");
 } else {
